@@ -345,10 +345,10 @@ int main(int argc, char* argv[]) {
   // Open Video if the extension is *.264
   if (image_path.substr(image_path.length() - 3, 3) == "264")
   {
-	  printf("capture from video file %s\n", image);
+	  printf("capture from video file %s\n", &image);
 	  VideoCapture capture(0);
 	  bool readsuccess = capture.open(image_path);
-	  if (!readsuccess) { printf("Couldn't open %s\n", image); return -1; }
+	  if (!readsuccess) { printf("Couldn't open %s\n", &image); return -1; }
 	  if (capture.isOpened())
 	  {
 		  cvNamedWindow("Video", 1);
@@ -359,13 +359,19 @@ int main(int argc, char* argv[]) {
 			  bool readsuccess = capture.read(imagRGB);
 			  if (!readsuccess)
 			  {
+				  printf("read video done.");
 				  break;
 			  }
 			  // cvtColor(imagRGB, im_gray, CV_BGR2GRAY);
 			  rawImage = cvCloneImage(&(IplImage)imagRGB);
 			  cvShowImage("Video", rawImage);
+			  char c = cvWaitKey(33);
+			  if (c == 27)
+			  {
+				  break;
+			  }
 		  }
-		  waitKey(0);
+		  // waitKey(0);
 		  capture.release();
 		  cvDestroyWindow("Video");
 	  }
