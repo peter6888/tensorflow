@@ -351,17 +351,46 @@ int main(int argc, char* argv[]) {
 	  if (!readsuccess) { printf("Couldn't open %s\n", &image); return -1; }
 	  if (capture.isOpened())
 	  {
+		  // load *.pb for arrow
+		  // load *.pb for floor
+		  // load *.pb for head count
+
 		  cvNamedWindow("Video", 1);
 		  Mat imagRGB;
 		  IplImage* rawImage = 0;
-		  while (true)
+		  int i = -1;
+		  while (i <= 50) // for debug purpose, use i<=50, otherwise use true
 		  {
 			  bool readsuccess = capture.read(imagRGB);
 			  if (!readsuccess)
 			  {
-				  printf("read video done.");
+				  std::cout<<"read video done.";
 				  break;
 			  }
+			  i++;
+			  std::cout << "Image.channels():" << imagRGB.channels();
+			  // int32 input_width = 299;
+			  // int32 input_height = 299;
+			  // float input_mean = 0;
+			  // float input_std = 255;
+			  /*
+			  // Refers to: https://stackoverflow.com/questions/39379747/import-opencv-mat-into-c-tensorflow-without-copying
+			  // And was https://gist.github.com/kyrs/9adf86366e9e4f04addb
+			  // allocate a Tensor
+			  Below code trying to use cv::Mat as input to build a Tensor which can use as Tensorflow input
+			  */
+			  Tensor inputImg(tensorflow::DT_FLOAT, tensorflow::TensorShape({ 1, input_height, input_width, 3 }));
+			  // get Tensor float pointer
+			  float *p = inputImg.flat<float>().data();
+			  // create a "holder" cv::Mat from the Tensor float pointer
+			  cv::Mat cameraImg(input_height, input_width, CV_32FC3, p);
+			  // use the "holder" as a destination
+			  imagRGB.convertTo(cameraImg, CV_32FC3);
+			  // To-do:run in Tensor, and verify the input
+			  // ===================================================================
+
+			  // To-do: show i in the output window
+
 			  // cvtColor(imagRGB, im_gray, CV_BGR2GRAY);
 			  rawImage = cvCloneImage(&(IplImage)imagRGB);
 			  cvShowImage("Video", rawImage);
