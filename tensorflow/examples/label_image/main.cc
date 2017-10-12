@@ -387,6 +387,19 @@ int main(int argc, char* argv[]) {
 			  // use the "holder" as a destination
 			  imagRGB.convertTo(cameraImg, CV_32FC3);
 			  // To-do:run in Tensor, and verify the input
+			  // Actually run the image through the model.
+			  std::vector<Tensor> outputs;
+			  Status run_status = session->Run({ { input_layer, inputImg } }, { output_layer }, {}, &outputs);
+			  if (!run_status.ok()) {
+				  LOG(ERROR) << "Running model failed: " << run_status;
+				  return -1;
+			  }
+
+			  Status print_status = PrintTopLabels(outputs, labels);
+			  if (!print_status.ok()) {
+				  LOG(ERROR) << "Running print failed: " << print_status;
+				  return -1;
+			  }
 			  // ===================================================================
 
 			  // To-do: show i in the output window
