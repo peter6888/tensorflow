@@ -418,7 +418,7 @@ int main(int argc, char* argv[]) {
 			  // To-do: show i in the output window
 
 			  // cvtColor(imagRGB, im_gray, CV_BGR2GRAY);
-			  rawImage = cvCloneImage(&(IplImage)imagRGB);
+			  rawImage = cvCloneImage(&(IplImage)cameraImg);
 			  cvShowImage("Video", rawImage);
 			  char c = cvWaitKey(33);
 			  if (c == 27)
