@@ -359,7 +359,7 @@ int main(int argc, char* argv[]) {
 		  Mat imagRGB;
 		  IplImage* rawImage = 0;
 		  int i = -1;
-		  while (i <= 50) // for debug purpose, use i<=50, otherwise use true
+		  while (i <= 100) // for debug purpose, use i<=50, otherwise use true
 		  {
 			  bool readsuccess = capture.read(imagRGB);
 			  if (!readsuccess)
@@ -368,7 +368,7 @@ int main(int argc, char* argv[]) {
 				  break;
 			  }
 			  i++;
-			  std::cout << "Image.channels():" << imagRGB.channels();
+			  std::cout << "Image.channels():" << imagRGB.channels() << " Image.rows:" << imagRGB.rows << " Image.cols:"<< imagRGB.cols << std::endl;
 			  // int32 input_width = 299;
 			  // int32 input_height = 299;
 			  // float input_mean = 0;
@@ -379,6 +379,19 @@ int main(int argc, char* argv[]) {
 			  // allocate a Tensor
 			  Below code trying to use cv::Mat as input to build a Tensor which can use as Tensorflow input
 			  */
+			  /*
+			  input_height = 288;
+			  input_width = 352;
+			  // below error will happen if manually set values
+			  Image.channels():3 Image.rows:288 Image.cols:352
+			  2017-10-15 05:53:30.161559: E C:\Users\stonepeter\source\repos\tensorflow\tensor
+			  flow\examples\label_image\main.cc:396] Running model failed: Invalid argument: T
+			  ried to explicitly squeeze dimension 1 but dimension was not 1: 0
+			  [[Node: InceptionV3/Logits/SpatialSqueeze = Squeeze[T=DT_FLOAT, squeeze
+			  _dims=[1, 2], _device="/job:localhost/replica:0/task:0/cpu:0"](InceptionV3/Logit
+			  s/Conv2d_1c_1x1/BiasAdd)]]
+			  */
+
 			  Tensor inputImg(tensorflow::DT_FLOAT, tensorflow::TensorShape({ 1, input_height, input_width, 3 }));
 			  // get Tensor float pointer
 			  float *p = inputImg.flat<float>().data();
