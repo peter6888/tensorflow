@@ -281,6 +281,52 @@ Status CheckTopLabel(const std::vector<Tensor>& outputs, int expected,
   return Status::OK();
 }
 
+/*
+getImageType by number which from Mat::type()
+https://stackoverflow.com/questions/12335663/getting-enum-names-e-g-cv-32fc1-of-opencv-image-types
+*/
+std::string getImageType(int number)
+{
+	// find type
+	int imgTypeInt = number % 8;
+	std::string imgTypeString;
+
+	switch (imgTypeInt)
+	{
+	case 0:
+		imgTypeString = "8U";
+		break;
+	case 1:
+		imgTypeString = "8S";
+		break;
+	case 2:
+		imgTypeString = "16U";
+		break;
+	case 3:
+		imgTypeString = "16S";
+		break;
+	case 4:
+		imgTypeString = "32S";
+		break;
+	case 5:
+		imgTypeString = "32F";
+		break;
+	case 6:
+		imgTypeString = "64F";
+		break;
+	default:
+		break;
+	}
+
+	// find channel
+	int channel = (number / 8) + 1;
+
+	std::stringstream type;
+	type << "CV_" << imgTypeString << "C" << channel;
+
+	return type.str();
+}
+
 int main(int argc, char* argv[]) {
   // These are the command-line flags the program can understand.
   // They define where the graph and input data is located, and what kind of
@@ -368,7 +414,8 @@ int main(int argc, char* argv[]) {
 				  break;
 			  }
 			  i++;
-			  std::cout << "Image.channels():" << imagRGB.channels() << " Image.rows:" << imagRGB.rows << " Image.cols:"<< imagRGB.cols << std::endl;
+			  // CV_8UC3
+			  std::cout << "Image.channels():" << imagRGB.channels() << " Image.rows:" << imagRGB.rows << " Image.cols:"<< imagRGB.cols << " Image.type():" << getImageType(imagRGB.type()) << std::endl;
 			  // int32 input_width = 299;
 			  // int32 input_height = 299;
 			  // float input_mean = 0;
