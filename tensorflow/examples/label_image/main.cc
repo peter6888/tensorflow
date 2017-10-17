@@ -327,6 +327,23 @@ std::string getImageType(int number)
 	return type.str();
 }
 
+Status ReadTensorFromCvMat(Mat &inputMat, Tensor *outputTensor, int height, int width, int channel=3) {
+	LOG(ERROR) << "ReadTensorFromCvMat()";
+	Tensor inputImg(tensorflow::DT_FLOAT, tensorflow::TensorShape({ 1, height, width, channel }));
+	// get Tensor float pointer
+	float *p = inputImg.flat<float>().data();
+	// create a "holder" cv::Mat from the Tensor float pointer
+	cv::Mat cameraImg(height, width, CV_8UC3, p);
+	// use the "holder" as a destination
+	inputMat.convertTo(cameraImg, CV_8UC3); // CV_32FC3);
+	outputTensor = &inputImg;
+	// cvtColor(imagRGB, im_gray, CV_BGR2GRAY);
+	IplImage* rawImage = 0;
+	rawImage = cvCloneImage(&(IplImage)cameraImg);
+	cvShowImage("Video", rawImage);
+	return Status::OK();
+}
+
 int main(int argc, char* argv[]) {
   // These are the command-line flags the program can understand.
   // They define where the graph and input data is located, and what kind of
@@ -405,7 +422,7 @@ int main(int argc, char* argv[]) {
 		  Mat imagRGB;
 		  IplImage* rawImage = 0;
 		  int i = -1;
-		  while (i <= 100) // for debug purpose, use i<=50, otherwise use true
+		  while (i <= 200) // for debug purpose, use i<=50, otherwise use true
 		  {
 			  bool readsuccess = capture.read(imagRGB);
 			  if (!readsuccess)
@@ -443,9 +460,12 @@ int main(int argc, char* argv[]) {
 			  // get Tensor float pointer
 			  float *p = inputImg.flat<float>().data();
 			  // create a "holder" cv::Mat from the Tensor float pointer
-			  cv::Mat cameraImg(input_height, input_width, CV_32FC3, p);
+			  cv::Mat cameraImg(input_height, input_width, CV_8UC3, p);
 			  // use the "holder" as a destination
-			  imagRGB.convertTo(cameraImg, CV_32FC3);
+			  imagRGB.convertTo(cameraImg, CV_8UC3); // CV_32FC3);
+
+			  Tensor newTensor;
+			  ReadTensorFromCvMat(imagRGB, &newTensor, input_height, input_width, 3);
 			  // To-do:run in Tensor, and verify the input
 			  // Actually run the image through the model.
 			  std::vector<Tensor> outputs;
@@ -465,8 +485,8 @@ int main(int argc, char* argv[]) {
 			  // To-do: show i in the output window
 
 			  // cvtColor(imagRGB, im_gray, CV_BGR2GRAY);
-			  rawImage = cvCloneImage(&(IplImage)cameraImg);
-			  cvShowImage("Video", rawImage);
+			  // rawImage = cvCloneImage(&(IplImage)cameraImg);
+			  // cvShowImage("Video", rawImage);
 			  char c = cvWaitKey(33);
 			  if (c == 27)
 			  {
