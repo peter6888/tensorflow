@@ -327,7 +327,7 @@ std::string getImageType(int number)
 	return type.str();
 }
 
-Status ReadTensorFromCvMat(Mat &inputMat, Tensor *outputTensor, int height, int width, int channel=3) {
+Status ReadTensorFromCvMat(Mat &inputMat, Tensor **outputTensor, int height, int width, int channel=3) {
 	LOG(ERROR) << "ReadTensorFromCvMat()";
 	Tensor inputImg(tensorflow::DT_FLOAT, tensorflow::TensorShape({ 1, height, width, channel }));
 	// get Tensor float pointer
@@ -336,7 +336,7 @@ Status ReadTensorFromCvMat(Mat &inputMat, Tensor *outputTensor, int height, int 
 	cv::Mat cameraImg(height, width, CV_8UC3, p);
 	// use the "holder" as a destination
 	inputMat.convertTo(cameraImg, CV_8UC3); // CV_32FC3);
-	outputTensor = &inputImg;
+	*outputTensor = &inputImg;
 	// cvtColor(imagRGB, im_gray, CV_BGR2GRAY);
 	IplImage* rawImage = 0;
 	rawImage = cvCloneImage(&(IplImage)cameraImg);
@@ -464,12 +464,12 @@ int main(int argc, char* argv[]) {
 			  // use the "holder" as a destination
 			  imagRGB.convertTo(cameraImg, CV_8UC3); // CV_32FC3);
 
-			  Tensor newTensor;
+			  Tensor *newTensor;
 			  ReadTensorFromCvMat(imagRGB, &newTensor, input_height, input_width, 3);
 			  // To-do:run in Tensor, and verify the input
 			  // Actually run the image through the model.
 			  std::vector<Tensor> outputs;
-			  Status run_status = session->Run({ { input_layer, inputImg } }, { output_layer }, {}, &outputs);
+			  Status run_status = session->Run({ { input_layer, *newTensor } }, { output_layer }, {}, &outputs);
 			  if (!run_status.ok()) {
 				  LOG(ERROR) << "Running model failed: " << run_status;
 				  return -1;
