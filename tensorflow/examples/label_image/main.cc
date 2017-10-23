@@ -44,6 +44,10 @@ limitations under the License.
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/dnn.hpp>
 #include <opencv2/highgui/highgui_c.h>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/dnn.hpp>
 
 #include "tensorflow/cc/ops/const_op.h"
 #include "tensorflow/cc/ops/image_ops.h"
@@ -415,11 +419,47 @@ int main(int argc, char* argv[]) {
 	  if (capture.isOpened())
 	  {
 		  // load *.pb for arrow
+		  //! [Create the importer of TensorFlow model]
+		  Ptr<dnn::Importer> importer_arrow;
+		  try                                     //Try to import TensorFlow AlexNet model
+		  {
+			  importer_arrow = dnn::createTensorflowImporter("C:\\Users\\stonepeter\\Desktop\\cnn_arrow\\cnn_arrow\\frozen_model_arrow.pb");
+		  }
+		  catch (const cv::Exception &err)        //Importer can throw errors, we will catch them
+		  {
+			  std::cerr << err.msg << std::endl;
+		  }
+
+		  if (!importer_arrow)
+		  {
+			  std::cerr << "Can't load network by using the mode file: " << std::endl;
+			  std::cerr << "frozen_model_arrow.pb" << std::endl;
+			  exit(-1);
+		  }
+
+		  //! [Initialize network]
+		  dnn::Net net_arrow;
+		  importer_arrow->populateNet(net_arrow);
+		  importer_arrow.release();                     //We don't need importer anymore
+
 		  // load *.pb for floor
+		  // ROI for floor
 		  // load *.pb for head count
+
+		  // ROI for arrow and floor 
+		  Rect roi_arrow(213, 1, 14, 12);
+		  Rect roi_floor(213, 12, 14, 13);
+
+		  String inBlobName = "data_node";
+		  String outBlobName = "Softmax_1";
+
+		  int elevator_status = 0;
+		  int elevator_status_record[32] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+		  int elevator_status_wptr = 0;
 
 		  cvNamedWindow("Video", 1);
 		  Mat imagRGB;
+		  Mat im_gray;
 		  IplImage* rawImage = 0;
 		  int i = -1;
 		  while (i <= 200) // for debug purpose, use i<=50, otherwise use true
@@ -456,20 +496,46 @@ int main(int argc, char* argv[]) {
 			  s/Conv2d_1c_1x1/BiasAdd)]]
 			  */
 
+			  // Use OpenCV's library to do infer
+			  cvtColor(imagRGB, im_gray, CV_BGR2GRAY);
+			  rawImage = cvCloneImage(&(IplImage)imagRGB);
+			  //cvShowImage("Video", rawImage);
+			  cv::Mat croppedArrowImage = im_gray(roi_arrow);
+			  cv::Mat croppedArrowImage_f;
+			  resize(croppedArrowImage, croppedArrowImage, cv::Size(28, 28));
+
+			  croppedArrowImage.convertTo(croppedArrowImage_f, CV_32F);
+			  croppedArrowImage_f = (croppedArrowImage_f - (255 / 2.0)) / 255;
+
+			  Mat inputBlobArrow = cv::dnn::blobFromImage(croppedArrowImage_f, 1, Size(28, 28));   //Convert Mat to image batch
+			  net_arrow.setInput(inputBlobArrow, inBlobName);
+			  Mat result_arrow = net_arrow.forward(outBlobName);
+			  {
+				  double min, max, min1, max1;
+				  int min_loc[8];
+				  int max_loc[8];
+				  int min_loc1[8];
+				  int max_loc1[8];
+				  minMaxIdx(result_arrow, &min, &max, min_loc, max_loc);
+				  //cout << "result_arrow = " << endl << " " << result_arrow << endl << endl;
+				  elevator_status = max_loc[1];
+			  }
+
+			  // ---- use point *p to copy memory data from cvMat to Tensorflow::Tensor-------
 			  Tensor inputImg(tensorflow::DT_FLOAT, tensorflow::TensorShape({ 1, input_height, input_width, 3 }));
+			  Tensor &inputImage = inputImg;
 			  // get Tensor float pointer
 			  float *p = inputImg.flat<float>().data();
 			  // create a "holder" cv::Mat from the Tensor float pointer
 			  cv::Mat cameraImg(input_height, input_width, CV_8UC3, p);
 			  // use the "holder" as a destination
 			  imagRGB.convertTo(cameraImg, CV_8UC3); // CV_32FC3);
-
-			  Tensor *newTensor;
-			  ReadTensorFromCvMat(imagRGB, &newTensor, input_height, input_width, 3);
+			  // ------ done create Tensor from cvMat ---------
 			  // To-do:run in Tensor, and verify the input
 			  // Actually run the image through the model.
+			  
 			  std::vector<Tensor> outputs;
-			  Status run_status = session->Run({ { input_layer, *newTensor } }, { output_layer }, {}, &outputs);
+			  Status run_status = session->Run({ { input_layer, inputImage } }, { output_layer }, {}, &outputs);
 			  if (!run_status.ok()) {
 				  LOG(ERROR) << "Running model failed: " << run_status;
 				  return -1;
