@@ -498,17 +498,23 @@ int main(int argc, char* argv[]) {
 
 			  // Use OpenCV's library to do infer
 			  cvtColor(imagRGB, im_gray, CV_BGR2GRAY);
-			  rawImage = cvCloneImage(&(IplImage)imagRGB);
-			  //cvShowImage("Video", rawImage);
-			  cv::Mat croppedArrowImage = im_gray(roi_arrow);
-			  cv::Mat croppedArrowImage_f;
-			  resize(croppedArrowImage, croppedArrowImage, cv::Size(28, 28));
+			  // rawImage = cvCloneImage(&(IplImage)imagRGB);
+			  std::cout << "im_gray.rows:" << im_gray.rows << std::endl;
+			  cv::Mat croppedArrowImage;// = im_gray(roi_arrow);
 
+			  cv::Mat croppedArrowImage_f;
+			  resize(im_gray(roi_arrow), croppedArrowImage, cv::Size(28, 28));
+			  //cv::imshow("Video", croppedArrowImage);
+			  std::cout << "croppedArrowImage.rows:" << croppedArrowImage.rows << std::endl;
 			  croppedArrowImage.convertTo(croppedArrowImage_f, CV_32F);
+			  std::cout << " croppedArrowImage_f.rows: " << croppedArrowImage_f.rows << " .type():" << getImageType(croppedArrowImage_f.type()) << std::endl;
 			  croppedArrowImage_f = (croppedArrowImage_f - (255 / 2.0)) / 255;
 
 			  Mat inputBlobArrow = cv::dnn::blobFromImage(croppedArrowImage_f, 1, Size(28, 28));   //Convert Mat to image batch
+			  std::cout << "Image.channels():" << inputBlobArrow.channels() << " Image.rows:" << inputBlobArrow.rows << " Image.cols:" << inputBlobArrow.cols << " Image.type():" << getImageType(inputBlobArrow.type()) << std::endl;
+			  cv::imshow("Video", inputBlobArrow);
 			  net_arrow.setInput(inputBlobArrow, inBlobName);
+			  
 			  Mat result_arrow = net_arrow.forward(outBlobName);
 			  {
 				  double min, max, min1, max1;
@@ -520,7 +526,8 @@ int main(int argc, char* argv[]) {
 				  //cout << "result_arrow = " << endl << " " << result_arrow << endl << endl;
 				  elevator_status = max_loc[1];
 			  }
-
+			  
+			  /* ---- use tensorflow to do infer
 			  // ---- use point *p to copy memory data from cvMat to Tensorflow::Tensor-------
 			  Tensor inputImg(tensorflow::DT_FLOAT, tensorflow::TensorShape({ 1, input_height, input_width, 3 }));
 			  Tensor &inputImage = inputImg;
@@ -546,6 +553,7 @@ int main(int argc, char* argv[]) {
 				  LOG(ERROR) << "Running print failed: " << print_status;
 				  return -1;
 			  }
+			  */
 			  // ===================================================================
 
 			  // To-do: show i in the output window
